@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import site
+import sys
 import unittest
 import utils
 
@@ -13,8 +14,10 @@ top = os.getenv('ANDROID_BUILD_TOP')
 if top is None:
     utils.panic('ANDROID_BUILD_TOP not set.\n')
 
-# Set up the env vars for libclang.
-site.addsitedir(os.path.join(top, 'prebuilts/clang/host/linux-x86/clang-stable/lib/python3/site-packages/'))
+# Use the Python bindings and library from the same host toolchain.
+host_tag = 'darwin-x86' if sys.platform == 'darwin' else 'linux-x86'
+clang_lib_dir = os.path.join(top, 'prebuilts/clang/host', host_tag, 'clang-stable/lib')
+site.addsitedir(os.path.join(clang_lib_dir, 'python3/site-packages'))
 
 import clang.cindex
 from clang.cindex import conf
@@ -26,9 +29,8 @@ from clang.cindex import TokenGroup
 from clang.cindex import TokenKind
 from clang.cindex import TranslationUnit
 
-# Set up LD_LIBRARY_PATH to include libclang.so, libLLVM.so, and etc.
-# Note that setting LD_LIBRARY_PATH with os.putenv() sometimes doesn't help.
-clang.cindex.Config.set_library_file(os.path.join(top, 'prebuilts/clang/host/linux-x86/clang-stable/lib/libclang.so'))
+libclang = 'libclang.dylib' if sys.platform == 'darwin' else 'libclang.so'
+clang.cindex.Config.set_library_file(os.path.join(clang_lib_dir, libclang))
 
 from defaults import *
 
